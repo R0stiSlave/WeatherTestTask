@@ -107,7 +107,7 @@ def get_weather(lat, lon):
     params = {
         "latitude": lat,
         "longitude": lon,
-        "hourly": "temperature_2m,weathercode",  # Добавили weathercode
+        "hourly": "temperature_2m,weathercode",
         "timezone": "auto"
     }
 
@@ -116,7 +116,7 @@ def get_weather(lat, lon):
 
     hourly = response.Hourly()
     hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
-    hourly_weathercode = hourly.Variables(1).ValuesAsNumpy()  # Получаем weathercode
+    hourly_weathercode = hourly.Variables(1).ValuesAsNumpy()
 
     hourly_data = {
         "date": pd.date_range(
@@ -126,7 +126,7 @@ def get_weather(lat, lon):
             inclusive="left"
         ),
         "temperature_2m": hourly_temperature_2m,
-        "weathercode": hourly_weathercode  # Добавляем в данные
+        "weathercode": hourly_weathercode
     }
 
     df = pd.DataFrame(data=hourly_data)
@@ -135,7 +135,13 @@ def get_weather(lat, lon):
     if isinstance(tzname, bytes):
         tzname = tzname.decode('utf-8')
     tz = ZoneInfo(tzname)
+
+    df['date'] = df['date'].dt.tz_convert(tz)
+
     now = datetime.now(tz)
+
+    df = df[df['date'] >= now].head(12)
+
     offset_seconds = now.utcoffset().total_seconds()
     hours = int(offset_seconds // 3600)
     minutes = int((offset_seconds % 3600) // 60)
@@ -146,9 +152,8 @@ def get_weather(lat, lon):
         "longitude": response.Longitude(),
         "timezone": utc_offset_str,
         "elevation": response.Elevation(),
-        "forecast": df.head(12)
+        "forecast": df
     }
-
 
 def index(request):
     weather_data = None
