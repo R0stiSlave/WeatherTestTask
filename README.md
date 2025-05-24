@@ -22,7 +22,7 @@ Django, Docker, HTML/CSS/JS, Open-Meteo API, Nominatim (OpenStreetMap)
 1. Клонировать репозиторий:
 
 ```
-git clone https://github.com/R0stiSlave/WeatherTestTask.git
+git clone https://github.com/R0stiSlave/WeatherTestTask
 cd WeatherTestTask
 ```
 
