@@ -1,0 +1,87 @@
+{% load static %}
+{% load custom_filter %}
+<html>
+<head>
+    <title>Прогноз погоды</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <h1>Погода</h1>
+    <form method="post" autocomplete="off">
+        {% csrf_token %}
+        <div class="autocomplete-wrapper">
+            <input type="text" name="city" id="city-input" value="{{ form.city.value|default_if_none:'' }}" required>
+            <div id="suggestions"></div>
+        </div>
+        <button type="submit">Показать</button>
+    </form>
+
+    {% if weather %}
+        <h2>Город: {{ city }}</h2>
+        <p>Координаты: {{ weather.latitude }}°, {{ weather.longitude }}°</p>
+        <p>Часовой пояс: {{ weather.timezone }}</p>
+        <p>Высота над уровнем моря: {{ weather.elevation }} м</p>
+
+        <h3>Прогноз на 12 часов</h3>
+        <table>
+            <tr>
+                <th>Дата и время</th>
+                <th>Температура (°C)</th>
+                <th>Погода</th>
+            </tr>
+            {% for row in weather.forecast.itertuples %}
+            <tr>
+                <td>{{ row.date|date:"d.m.Y H:i" }}</td>
+                <td>{{ row.temperature_2m|floatformat:1 }}</td>
+                <td class="weather-icon">
+                    {% if row.weathercode in weather_codes %}
+                        {{ weather_codes|get_item:row.weathercode|first }}
+                    {% else %}
+                        ❓
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% elif city %}
+        <p>Не удалось найти прогноз для города "{{ city }}"</p>
+    {% endif %}
+
+<script>
+const input = document.getElementById('city-input');
+const suggestions = document.getElementById('suggestions');
+
+input.addEventListener('input', async () => {
+    const query = input.value.trim();
+    if (!query) {
+        suggestions.innerHTML = '';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/autocomplete/?q=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error('Ошибка сети');
+        const cities = await response.json();
+
+        suggestions.innerHTML = cities.map(city => `<div>${city}</div>`).join('');
+
+        suggestions.querySelectorAll('div').forEach(div => {
+            div.addEventListener('click', () => {
+                input.value = div.textContent;
+                suggestions.innerHTML = '';
+            });
+        });
+    } catch {
+        suggestions.innerHTML = '';
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+        suggestions.innerHTML = '';
+    }
+});
+</script>
+
+</body>
+</html>
